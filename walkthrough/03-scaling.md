@@ -3,11 +3,32 @@
 This section covers benchmarking and scaling OpenEnv environments.
 
 **Contents:**
+- [Provider Scaling](#provider-scaling)
 - [WebSocket-based Scaling](#websocket-based-scaling)
 - [Microservice Scaling](#microservice-scaling)
 - [Scaling Experiments](#scaling-experiments)
 
 ---
+
+## Provider Scaling
+
+The easiest way to scale an OpenEnv environment is to use a `provider` these are abstractions based on runtimes like Uvicorn, Docker Swarm, or Kubernetes.
+
+```python
+from openenv.providers import UVProvider, DockerSwarmProvider, LocalDockerProvider
+
+docker_provider = LocalDockerProvider() # default
+uvicorn_provider = UVProvider() # python only
+swarm_provider = DockerSwarmProvider() 
+
+with EchoEnv.from_hub(
+    repo_id="openenv/echo-env", 
+    provider=swarm_provider, 
+    replicas=4,
+) as env:
+  result = env.reset()
+  result = env.step(EchoAction(message="Hello"))
+```
 
 ## WebSocket-based Scaling
 

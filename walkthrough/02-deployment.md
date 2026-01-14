@@ -141,7 +141,7 @@ git clone https://huggingface.co/spaces/burtenshaw/openenv-benchmark
 cd openenv-benchmark
 
 # Install in editable mode
-pip install -e .
+uv sync
 
 # Start server
 uv run server
@@ -183,13 +183,15 @@ docker run -d -p 8000:8000 registry.hf.space/openenv-echo-env:latest
 ### Build Image
 
 ```bash
-cd my_env
+# Clone from HF Space
+git clone https://huggingface.co/spaces/burtenshaw/openenv-benchmark
+cd openenv-benchmark
 
 # Using OpenEnv CLI (recommended)
-openenv build -t my-env:latest
+openenv build -t openenv-benchmark:latest
 
 # Or with Docker directly
-docker build -t my-env:latest -f server/Dockerfile .
+docker build -t openenv-benchmark:latest -f server/Dockerfile .
 ```
 
 ### Run Container
@@ -211,11 +213,21 @@ docker run -d --name my-env -p 8000:8000 my-env:latest
 ### Connect from Python
 
 ```python
-from my_env import MyEnv, MyAction
+from echo_env import EchoEnv, EchoAction
 
-with MyEnv(base_url="http://localhost:8000") as client:
+with EchoEnv(base_url="http://localhost:8000") as client:
     result = client.reset()
-    result = client.step(MyAction(command="test"))
+    result = client.step(EchoAction(message="Hello"))
+    print(result.observation)
+
+with MyEnv.from_hub("openenv/echo-env") as client:
+    result = client.reset()
+    result = client.step(EchoAction(message="Hello"))
+    print(result.observation)
+
+with EchoEnv.from_docker_image("<local_docker_image>") as client:
+    result = client.reset()
+    result = client.step(EchoAction(message="Hello"))
     print(result.observation)
 ```
 
@@ -250,42 +262,6 @@ openenv push --repo-id username/my-env
 openenv push --repo-id username/my-env --private
 ```
 
-| Flag | Description |
-|------|-------------|
-| `--repo-id` | Repository in `username/repo-name` format |
-| `--private` | Make Space private (default: public) |
-| `--base-image` | Override Dockerfile base image |
-| `--no-interface` | Disable web UI |
-
-Your Space will be available at:
-- **URL:** `https://username-my-env.hf.space`
-- **Web UI:** `https://username-my-env.hf.space/web`
-- **API Docs:** `https://username-my-env.hf.space/docs`
-- **Health:** `https://username-my-env.hf.space/health`
-
-**Available endpoints:**
-
-| Endpoint | Protocol | Description |
-|----------|----------|-------------|
-| `/ws` | **WebSocket** | Persistent session (used by client) |
-| `/health` | HTTP GET | Health check |
-| `/reset` | HTTP POST | Reset environment (stateless) |
-| `/step` | HTTP POST | Execute action (stateless) |
-| `/state` | HTTP GET | Get current state |
-| `/docs` | HTTP GET | OpenAPI documentation |
-| `/web` | HTTP GET | Interactive web UI |
-
-
-Every HF Space has a Docker registry URL:
-
-```bash
-# Pull from HF registry
-docker pull registry.hf.space/openenv-echo-env:latest
-
-# Run locally
-docker run -d -p 8000:8000 registry.hf.space/username-my-env:latest
-```
-
 ### Space Configuration
 
 The `openenv.yaml` manifest controls Space settings:
@@ -297,21 +273,12 @@ version: "1.0.0"
 description: My custom environment
 ```
 
-### Hardware Options
+Hardware Options:
 
 | Tier | vCPU | RAM | Cost |
 |------|------|-----|------|
 | CPU Basic (Free) | 2 | 16GB | Free |
 | CPU Upgrade | 8 | 32GB | $0.03/hr |
-| T4 Small | 4 | 15GB | $0.60/hr |
-| A10G Small | 4 | 15GB | $1.05/hr |
-
-### Configure via Settings
-
-1. Go to Space Settings
-2. Add Variables:
-   - `WORKERS=4` (worker processes)
-   - `MAX_CONCURRENT_ENVS=100` (session limit)
 
 OpenEnv environments support configuration via environment variables.
 
@@ -428,6 +395,3 @@ with EchoEnv(base_url="http://localhost:8000") as env:
     result = env.step(EchoAction(message="Hello"))
     print(result.observation)
 ```
-
-```
-
